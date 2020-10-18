@@ -1,0 +1,256 @@
+<!--
+ @author Xin Li <helloimlixin@gmail.com>
+ @file Description index page
+ @desc Created on 2020-05-09 6:09:34 am
+ @copyright Xin Li
+ -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!-- Required meta tags-->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Colorlib Templates">
+    <meta name="author" content="Colorlib">
+    <meta name="keywords" content="Colorlib Templates">
+
+    <!-- Title Page-->
+    <title>微博热搜信息抓取系统</title>
+
+    <!-- Icons font CSS-->
+    <link href="static/vendor/mdi-font/css/material-design-iconic-font.min.css" rel="stylesheet" media="all">
+    <link href="static/vendor/font-awesome-4.7/css/font-awesome.min.css" rel="stylesheet" media="all">
+    <!-- Font special for pages-->
+    <link href="https://fonts.googleapis.com/css?family=Poppins:100,100i,200,200i,300,300i,400,400i,500,500i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
+
+    <!-- static/vendor CSS-->
+    <link href="static/vendor/select2/select2.min.css" rel="stylesheet" media="all">
+
+    <!-- Main CSS-->
+    <link href="static/main.css" rel="stylesheet" media="all">
+    <link rel="shortcut icon" href="static/favicon.ico" type="image/x-icon">
+    <link rel="icon" href="static/favicon.ico" type="image/x-icon">
+    <!-- <link rel="manifest" href="/manifest.json"> -->
+    <meta name="msapplication-TileColor" content="#ffffff">
+    <meta name="msapplication-TileImage" content="/ms-icon-144x144.png">
+    <meta name="theme-color" content="#ffffff">
+
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <link src="static/bootstrap-4.0.0-dist/css/bootstrap.min.css">
+    <script src="static/bootstrap-4.0.0-dist/js/bootstrap.min.js"></script>
+{#    <script src="static/crawler.js"></script>#}
+    <script src="static/monitor.js"></script>
+</head>
+
+<body>
+    <div class="page-wrapper bg-gra-01 p-t-100 p-b-100 font-poppins">
+        <div class="wrapper wrapper--w1450" id="card-wrapper" style="display: none;">
+            <div class="card card-3" id="card">
+                <div class="card-heading"></div>
+                <div class="card-body">
+                    <h3 class="title">微博信息抓取系统</h3>
+                    <!-- Tab links -->
+                    <div class='tab'>
+                        <button class="btn tablinks" onclick="switchTab(event, 'col1')" id="defaultOpen"><h5>话题榜内容抓取</h5></button>
+                        <button class="btn tablinks" onclick="switchTab(event, 'col2')"><h5>关键词上榜预警</h5></button>
+                        <br>
+                    </div>
+
+                    <!-- First Tab content -->
+                    <br>
+                    <div id="col1" class="tabcontent">
+                        <form id="crawler" method="POST" action="/crawler" name="crawler">
+                            <div class="input-group">
+                                <h5 class="body">话题词</h5>
+                                <input class="input--style-3" type="text" placeholder="请输入话题词（不带#号）" id="topic" name="topic" required>
+                                <br><h5 class="annotation">请不要包含#号</h5>
+                            </div>
+                            <div class="monitor-time">
+                                <h5 class="body">监测时间（建议不超过3天）</h5>
+                                <ul class="checkbox">
+                                    <li>
+                                        <label class="container">所有
+                                            <input type="checkbox" id="all-time", name="all-time">
+                                            <span class="checkmark"></span>
+                                          </label>
+                                    </li>
+                                </ul>
+                                <div>
+                                    <label for="starttime-topic">开始时间:</label>
+                                    <input type="datetime-local" id="starttime-topic" name="starttime-topic">
+                                    <label for="endtime-topic">截止时间:</label>
+                                    <input type="datetime-local" id="endtime-topic" name="endtime-topic">
+                                    <br><h5 class="annotation">开始时间不可晚于截止时间</h5>
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="vip-categories">
+                                <br>
+                                <h5 class="body">选择需要抓取的VIP类型（可多选）</h5>
+                                <p>
+                                    <ul class="checkbox">
+                                        <li>
+                                            <label for="big" class="container">VIP大号
+                                                <input type="checkbox" id="big", name="big">
+                                                <span class="checkmark"></span>
+                                              </label>
+                                        </li>
+                                        <li>
+                                            <label for="yellow" class="container">黄V
+                                                <input type="checkbox" id="yellow", name="yellow">
+                                                <span class="checkmark"></span>
+                                              </label>
+                                        </li>
+                                        <li>
+                                            <label for="blue" class="container">蓝V
+                                                <input type="checkbox" id="blue", name="blue">
+                                                <span class="checkmark"></span>
+                                              </label>
+                                        </li>
+                                        <li>
+                                            <label for="gold" class="container">金V
+                                                <input type="checkbox" id="gold", name="gold">
+                                                <span class="checkmark"></span>
+                                              </label>
+                                        </li>
+                                        <li>
+                                            <label for="normal" class="container">普通用户
+                                                <input type="checkbox" id="normal", name="normal">
+                                                <span class="checkmark"></span>
+                                              </label>
+                                        </li>
+                                    </ul>
+                                    <p>
+                                        <br><h5 class="annotation">VIP大号包括蓝黄金三种VIP类型</h5>
+                                    </p>
+                                </p>
+                            </div>
+                            <div class="require-screenshot">
+                                <h5 class="body">是否需要截图？</h5>
+                                <ul class="checkbox">
+                                    <li>
+                                        <label class="container">需要
+                                            <input type="checkbox" id="yes-screenshot", name="yes-screenshot">
+                                            <span class="checkmark"></span>
+                                          </label>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="p-t-20">
+                                <input class="btn btn--pill btn--gray form-button" id="button-crawler" value="开始抓取" type="submit"/>
+                                <a href="/download" download>
+                                    <input class="btn btn--pill btn--gray form-button" type="button" value="下载数据"/>
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Second Tab Content -->
+                    <div id="col2" class="tabcontent">
+                        <form method="POST" id="monitor" name="monitor" action="/monitor">
+                            <div class="input-group">
+                                <h5 class="body">请输入话题词（不带#号，有多个时用英文逗号隔开）</h5>
+                                <input class="input--style-3" type="text" placeholder="请输入话题词（不带#号）" id="kw" name="keywords" required>
+                                <br><h5 class="annotation">**可监测热搜、话题总榜、pc话题榜、pc热门话题</h5>
+                            </div>
+                            <div class="monitor-time">
+                                <h5 class="body">监测时间（建议不超过3天）</h5>
+                                <div>
+                                    <label for="starttime-keywords">开始时间:</label>
+                                    <input type="datetime-local" id="starttime-keywords" name="starttime-keywords" required>
+                                    <label for="endtime-keywords">截止时间:</label>
+                                    <input type="datetime-local" id="endtime-keywords" name="endtime-keywords" required>
+                                    <br><h5 class="annotation">开始时间不可晚于截止时间</h5>
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="alert-contacts">
+                                <h5 class="body">报警联系人（若需要多个邮箱，以英文逗号隔开）</h5>
+                                <input class="input--style-3" type="text" placeholder="请输入报警联系人邮箱（以英文逗号隔开）" id="ac" name="alert-contacts" required>
+                            </div>
+                            <div class="p-t-20">
+                                <input class="btn btn--pill btn--gray" id="button-monitor" type="button" value="开始监测"/>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Jquery JS-->
+    <!-- Jquery JS-->
+    <script src="static/vendor/jquery/jquery.min.js"></script>
+    <!-- static/vendor JS-->
+    <script src="static/vendor/select2/select2.min.js"></script>
+
+    <!-- Main JS-->
+    <script src="static/global.js"></script>
+    <script>
+        function switchTab(evt, tabName) {
+            var i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tabcontent");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            tablinks = document.getElementsByClassName("tablinks");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+        }
+        document.getElementById("defaultOpen").click();
+    </script>
+    <script>
+        document.getElementById("button-crawler").addEventListener(
+        "click",
+        function(event) {
+            if (event.target.value === "开始抓取") {
+            event.target.value = "停止抓取";
+            } else {
+            event.target.value = "开始抓取";
+            }
+        },
+        false
+        );
+    </script>
+    <script>
+        document.getElementById("button-monitor").addEventListener(
+        "click",
+        function(event) {
+            if (event.target.value === "开始监测") {
+            event.target.value = "停止监测";
+            } else {
+            event.target.value = "开始监测";
+            }
+        },
+        false
+        );
+    </script>
+    <script>
+        $(document).ready(function() {
+            $('#card-wrapper').delay(500).fadeIn(2500);
+        });
+    </script>
+    <!-- <script>
+        $(function() {
+          $('input[name="monitor-kw"]').daterangepicker({
+            timePicker: true,
+            startDate: moment().startOf('hour'),
+            endDate: moment().startOf('hour').add(32, 'hour'),
+            locale: {
+              format: 'M/DD hh:mm A'
+            }
+          });
+        });
+    </script> -->
+
+</body>
+
+</html>
+<!-- end document-->
+
