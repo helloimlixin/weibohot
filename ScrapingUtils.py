@@ -5,7 +5,6 @@ from selenium.webdriver import DesiredCapabilities
 import pandas as pd
 from bs4 import BeautifulSoup
 import requests
-import os
 
 
 def timeme(function):
@@ -65,6 +64,34 @@ def create_webdriver(headless=False):
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--no-sandbox")
     options.add_argument("--window-size=1920,1080")
+    capabilities = DesiredCapabilities.CHROME
+    capabilities['goog:loggingPrefs'] = {'browser': 'ALL'}
+    capabilities['pageLoadStrategy'] = "none"
+    driver = webdriver.Chrome(options=options,
+                              executable_path='/Users/xinli/Desktop/weibohot/chromedriver',
+                              desired_capabilities=capabilities)
+    driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {
+        'source': """Object.defineProperty(navigator, 'webdriver', {
+                get: () => undefined
+                })
+                """
+    })
+    driver.execute_cdp_cmd('Network.enable', {})
+    driver.execute_cdp_cmd(
+        'Network.setExtraHTTPHeaders', {'headers': {'User-Agent': 'browser1'}})
+
+    return driver
+
+
+def create_mobile_webdriver(headless=False):
+    options = webdriver.ChromeOptions()
+    options.add_experimental_option('excludeSwitches', ['enable-automation'])
+    options.add_experimental_option('useAutomationExtension', False)
+    if headless:
+        options.add_argument("--headless")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--window-size=375,812")
     capabilities = DesiredCapabilities.CHROME
     capabilities['goog:loggingPrefs'] = {'browser': 'ALL'}
     capabilities['pageLoadStrategy'] = "none"

@@ -6,13 +6,10 @@
 #
 import time
 import zipfile
-from multiprocessing.pool import ThreadPool
-
-from flask import Flask, render_template, request, send_from_directory, jsonify, send_file, flash, redirect, url_for
-
-from ScrapingUtils import export_excel
+from email.mime.image import MIMEImage
 from config import urls
-from keyword_alert import keyword_alert_utils, flatten_list
+from flask import Flask, render_template, request, send_from_directory, jsonify, send_file, flash
+from keyword_alert import send_mail, parallel_crawler, email_login, create_mobile_webdriver
 from topic_scraper import topic_scraper_utils, weibo_login
 import os
 import pandas as pd
@@ -21,8 +18,9 @@ import socket
 from selenium.webdriver.remote.command import Command
 import http.client
 from urllib3 import exceptions
+from PIL import Image
+import io
 from datetime import datetime
-import email_sender
 
 app = Flask(__name__)
 app.secret_key = secrets.token_urlsafe(32)
@@ -181,20 +179,19 @@ def monitor():
         if request.data.decode('utf-8') == 'halt':
             print("Program execution interrupted, driver closed.")
             driver.quit()
-            return jsonify({"redirect": "/"})
+            return jsonify({"redirect": "/monitor"})
         # Check if driver is alive.
         if get_status(driver) == 'Dead':
             print('DEBUG: Driver is dead, return to home page to login.')
             return jsonify({"redirect": "/"})
         # Get topic
         print(request.form)
-        global keywords
-        keywords = request.form['keywords'].split(', ')
-        if keywords is None or len(keywords) == 0:
+        keyword_list = request.form['keywords'].split()
+        if keyword_list is None or len(keyword_list) == 0:
             print("DEBUG: Keywords are required.")
             flash("Keywords are required.")
             return render_template('home.html')
-        print(keywords)
+        print(keyword_list)
 
         # Get time interval for keyword monitor.
         start_datetime_keywords = request.form['starttime-keywords']
@@ -208,47 +205,69 @@ def monitor():
             return render_template('home.html')
 
         # Get alert contact for keyword monitor.
-        alert_contacts = request.form['alert-contacts'].split(', ')
-        print(alert_contacts)
-
-        keywords_str = ''
-        for keyword in keywords:
-            keywords_str += keyword
-        dir_name = keywords_str
-        try:
-            os.mkdir(dir_name)
-            print('Directory', dir_name, 'created.')
-        except FileExistsError:
-            print('Directory', dir_name, 'already exists.')
-        excel_path = dir_name + '/' + 'keyword_alert.xlsx'
-        current_time = datetime.now().month + '月' + datetime.now().day + '日 ' + datetime.now().hour + '时' + \
-                       datetime.now().minute + '分'
-        while time_interval_keywords[0] <= current_time <= time_interval_keywords[1]:
-            for key in urls:
-                urls[key]['keywords'] = keywords
-                urls[key]['driver'] = driver
-            pool = ThreadPool(8)
-            result = pool.map(keyword_alert_utils, urls)
-            pool.close()
-            pool.join()
-            result_list = flatten_list(result)
-            for result in result_list:
-                for email in alert_contacts:
-                    email_sender.send_email(email, result, MY_ADDRESS, PASSWORD)
-            if result_list:
-                if os.path.exists(excel_path):
-                    original_df = pd.read_excel(excel_path, columns=['话题词', '关键词', '排名', '榜单'])
-                    new_df = pd.DataFrame(result_list, columns=['话题词', '关键词', '排名', '榜单'])
-                    result_df = pd.concat(
-                        [original_df, new_df]).drop_duplicates(subset=['话题词', '关键词', '排名', '榜单'],
-                                                               keep='last').reset_index(drop=True)
-                    export_excel(result_list, result_df, excel_path)
+        emails = request.form['alert-contacts'].split(', ')
+        print(emails)
+        prev_dict = None
+        # Prepare the SMTP Server to send emails.
+        email_sender = email_login(MY_ADDRESS, PASSWORD)
+        time_instance = time_format_converter(datetime.now().strftime('%Y-%m-%d %H:%M'))
+        print(time_instance)
+        while time_interval_keywords[0] <= time_instance <= time_interval_keywords[1]:
+            changing = False
+            result_dict = parallel_crawler(keyword_list, urls)
+            messages = []
+            for key, value in result_dict.items():
+                if prev_dict is not None and key in prev_dict and prev_dict[key] > value:
+                    messages.append('=> ' + key + ' 排名上升至：' + str(value))
+                    changing = True
+                elif prev_dict is not None and key in prev_dict and prev_dict[key] < value:
+                    messages.append('=> ' + key + ' 排名下降至：' + str(value))
+                    changing = True
                 else:
-                    result_df = pd.DataFrame(result_list)
-                    export_excel(result_list, result_df, excel_path)
-            else:
-                print('Nothing here.')
-            time.sleep(60 * 5)
+                    messages.append(key + ' 排名：' + str(value))
+                    if not changing:
+                        changing = False
+
+            if prev_dict is None or changing and bool(result_dict):
+                print(messages)
+                new_driver = create_mobile_webdriver(headless=True)
+                new_driver.get('https://m.weibo.cn/p/106003type=25&t=3&disable_hot=1&filter_type=realtimehot?jumpfrom'
+                               '=weibocom')
+                time.sleep(5)
+
+                images = []
+
+                for key in result_dict:
+                    # Take Screenshot
+                    displacement = (result_dict[next(iter(result_dict))] + 6) // 15 * 700
+                    new_driver.execute_script(f'window.scrollTo(0, {displacement})')
+                    page_screenshot = new_driver.get_screenshot_as_png()
+                    img = Image.open(io.BytesIO(page_screenshot))
+                    screensize = (new_driver.execute_script("return document.body.clientWidth"),
+                                  # Get size of the part of the screen visible in the screenshot
+                                  new_driver.execute_script("return window.innerHeight"))
+                    img = img.resize(screensize)  # resize so coordinates in png correspond to coordinates on webpage
+                    memf = io.BytesIO()
+                    img.save(memf, 'PNG')
+                    image_data = MIMEImage(memf.getvalue(), name=f'微博热搜榜-{key.split(":")[1]}.png')
+                    image_data.add_header('Content-Disposition', 'attachment; filename=f"微博热搜榜.png"')
+                    images.append(image_data)
+                    memf.close()
+                for email in emails:
+                    content = ''
+                    for message in messages:
+                        content += message + '\n'
+                    email_sender = send_mail(email, content, images, MY_ADDRESS, email_sender)
+                time.sleep(1)
+            elif result_dict is not None and not changing:
+                time.sleep(60)
+            elif result_dict is None and prev_dict is not None:
+                time.sleep(5 * 60)
+
+            prev_dict = result_dict
+            time_instance = time_format_converter(datetime.now().strftime('%Y-%m-%d %H:%M'))
+
+    print('Done:)')
 
     return jsonify(result='Success.')
 
@@ -275,7 +294,7 @@ def selected_vip(big, blue, yellow, gold, normal):
         return selected_vip_categories
 
 
-def export2Excel(topic_info, topic_df, excel_path):
+def export_excel(topic_info, topic_df, excel_path):
     topic_df.columns = ['话题词', '关键词', '排名', '榜单']
     writer = pd.ExcelWriter(excel_path)
     topic_df.to_excel(writer, sheet_name='bonjour', index=False)

@@ -10,8 +10,6 @@ from bs4 import BeautifulSoup
 import pandas as pd
 from selenium.webdriver.remote.command import Command
 from urllib3 import exceptions
-
-from config import keys
 from ScrapingUtils import timeme, wait_between, create_webdriver, export_excel, get_fan_data
 import time
 from selenium.webdriver.common.by import By
@@ -25,7 +23,6 @@ import os
 import glob
 from datetime import datetime, timedelta
 import socket
-import imgkit
 
 TOPIC = "#学历歧视背后的经济学原理#"
 VIP_CATEGORIES = ["蓝V", "黄V", "金V", "会员", "达人", "正常"]
