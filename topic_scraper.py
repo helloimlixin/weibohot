@@ -231,7 +231,7 @@ def topic_scraper_utils(driver, qr_code_src, topic, selected_vip_categories, tim
     message = 'Web page successfully rendered.'
     while qr_code_src is None:
         print('Login failed: restarting Weibo login procedure.')
-        driver, qr_code_src = weibo_login(True)
+        driver, qr_code_src = weibo_login(False)
 
     print(message)
 
@@ -407,7 +407,7 @@ if __name__ == '__main__':
     while True:
         try:
             print('Fetching topic information data...')
-            driver, qr_code_src = weibo_login(True)
+            driver, qr_code_src = weibo_login(False)
             topic_scraper_utils(driver, qr_code_src, TOPIC, SELECTED_VIP_CATEGORIES, TIME_INTERVAL, screenshot)
         except TimeoutException:
             print('Timeout Exception occurred, restarting...')

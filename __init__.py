@@ -230,7 +230,7 @@ def monitor():
 
             if prev_dict is None or changing and bool(result_dict):
                 print(messages)
-                new_driver = create_mobile_webdriver(headless=True)
+                new_driver = create_mobile_webdriver(headless=False)
                 new_driver.get('https://m.weibo.cn/p/106003type=25&t=3&disable_hot=1&filter_type=realtimehot?jumpfrom'
                                '=weibocom')
                 time.sleep(5)
